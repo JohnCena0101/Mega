@@ -36,6 +36,8 @@
 ```
 Usage: node MegaMedusa.js <link> <time> <rps> <threads> <proxy> 
 Example: node MegaMedusa.js https://example.com 500 30 10 proxy.txt 
+node fldr.js <target> <time> <thread> <proxylist> <rps>
+node flood.js [target] [time] [rps] [thread] [proxylist.txt]
 ```
 
 ### Instructions :
