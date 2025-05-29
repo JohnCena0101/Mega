@@ -11,6 +11,9 @@ fw = Fore.WHITE
 fre = Fore.RESET
 
 list = [
+'https://www.proxy-list.download/api/v1/get?type=http&anon=elite&country=VN,
+'https://api.getproxylist.com/proxy?country[]=VN, 
+'https://www.proxynova.com/proxy-server-list/country-vn,
 'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt',
 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt',
